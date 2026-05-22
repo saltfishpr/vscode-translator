@@ -1,8 +1,14 @@
 {
   "name": "vscode-translator",
   "displayName": "vscode-translator",
-  "description": "Translate selected text using Google / DeepL / OpenAI / Baidu APIs via shortcut",
+  "description": "Translate selected text using Google / DeepL / OpenAI / Baidu APIs",
   "version": "0.0.1",
+  "publisher": "saltfishpr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saltfishpr/vscode-translator"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.120.0"
   },
