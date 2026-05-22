@@ -1,7 +1,7 @@
 {
   "name": "vscode-translator",
   "displayName": "vscode-translator",
-  "description": "",
+  "description": "Translate selected text using Google / DeepL / OpenAI / Baidu APIs via shortcut",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.120.0"
@@ -9,15 +9,118 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "vscode-translator.helloWorld",
-        "title": "Hello World"
+        "command": "translator.translateSelection",
+        "title": "Translate: Translate Selected Text"
+      },
+      {
+        "command": "translator.translateAndReplace",
+        "title": "Translate: Translate and Replace Selection"
+      },
+      {
+        "command": "translator.pickProvider",
+        "title": "Translate: Switch Provider"
+      },
+      {
+        "command": "translator.pickTargetLang",
+        "title": "Translate: Switch Target Language"
       }
-    ]
+    ],
+    "keybindings": [
+      {
+        "command": "translator.translateSelection",
+        "key": "ctrl+alt+t",
+        "mac": "cmd+alt+t",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "translator.translateAndReplace",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorHasSelection"
+      }
+    ],
+    "configuration": {
+      "title": "Translator",
+      "properties": {
+        "translator.provider": {
+          "type": "string",
+          "enum": [
+            "google",
+            "deepl",
+            "openai",
+            "baidu"
+          ],
+          "default": "google",
+          "description": "Translation provider"
+        },
+        "translator.targetLang": {
+          "type": "string",
+          "default": "zh-CN",
+          "description": "Target language code (e.g. zh-CN, en, ja, fr)"
+        },
+        "translator.sourceLang": {
+          "type": "string",
+          "default": "auto",
+          "description": "Source language code; 'auto' for auto-detect"
+        },
+        "translator.displayMode": {
+          "type": "string",
+          "enum": [
+            "hover",
+            "panel"
+          ],
+          "default": "hover",
+          "description": "How to display translation result"
+        },
+        "translator.google.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Google Cloud Translation API key (leave empty to use free endpoint)"
+        },
+        "translator.deepl.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DeepL API key"
+        },
+        "translator.deepl.useFree": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use DeepL free API endpoint"
+        },
+        "translator.openai.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI / compatible API key"
+        },
+        "translator.openai.baseUrl": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "OpenAI-compatible base URL"
+        },
+        "translator.openai.model": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "Model name for OpenAI translation"
+        },
+        "translator.baidu.appid": {
+          "type": "string",
+          "default": "",
+          "description": "Baidu Translate APP ID"
+        },
+        "translator.baidu.secret": {
+          "type": "string",
+          "default": "",
+          "description": "Baidu Translate secret"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
@@ -34,15 +137,15 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.120.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "typescript-eslint": "^8.56.1",
-    "eslint": "^9.39.3",
+    "@types/node": "^22.19.19",
+    "@types/vscode": "^1.120.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
     "esbuild": "^0.27.3",
+    "eslint": "^9.39.3",
     "npm-run-all": "^4.1.5",
     "typescript": "^5.9.3",
-    "@vscode/test-cli": "^0.0.12",
-    "@vscode/test-electron": "^2.5.2"
+    "typescript-eslint": "^8.56.1"
   }
 }
