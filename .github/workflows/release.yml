@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check release version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag v$tag does not match package.json version $version"
+            exit 1
+          fi
+
+      - name: Package extension
+        run: npx vsce package --out "vscode-translator-${GITHUB_REF_NAME}.vsix"
+
+      - name: Publish extension to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "vscode-translator-${{ github.ref_name }}.vsix"
