@@ -2,7 +2,7 @@
   "name": "vscode-translator",
   "displayName": "vscode-translator",
   "description": "Translate selected text using Google / DeepL / OpenAI / Baidu APIs",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "saltfishpr",
   "repository": {
     "type": "git",
@@ -112,7 +112,7 @@
         },
         "translator.openai.model": {
           "type": "string",
-          "default": "gpt-4o-mini",
+          "default": "gpt-5.4-mini",
           "description": "Model name for OpenAI translation"
         },
         "translator.baidu.appid": {
