@@ -34,10 +34,10 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Compile
-        run: npm run compile --if-present
+        run: npm run compile
 
       - name: Test
-        run: npm test --if-present
+        run: npm test
