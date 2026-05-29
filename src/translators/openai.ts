@@ -14,8 +14,8 @@ export class OpenAITranslator implements Translator {
     }
     const url = `${this.baseUrl.replace(/\/+$/, '')}/chat/completions`;
     const sys =
-      `You are a professional translator. Translate the user's text to ${p.targetLang}. Output ONLY the translation, ` +
-      `preserve formatting and code identifiers; do not add explanations.`;
+      `You are a professional translator. Translate the user's text to ${p.targetLang}. ` +
+      `Output ONLY the translation, preserve formatting and code identifiers; do not add explanations.`;
     const body = {
       model: this.model,
       temperature: 0.2,

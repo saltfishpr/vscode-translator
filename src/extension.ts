@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getConfig, updateConfig } from './config';
 import { createTranslator } from './translators';
+import type { TranslateResult } from './translators';
 
 let statusBar: vscode.StatusBarItem;
 
@@ -74,30 +75,59 @@ async function runTranslate(replace: boolean) {
   }
 
   const cfg = getConfig();
-  const translator = createTranslator(cfg);
 
-  const progress = vscode.window.setStatusBarMessage(
-    `$(sync~spin) Translating with ${translator.name}...`
-  );
-  try {
-    const result = await translator.translate({
-      text,
-      sourceLang: cfg.sourceLang,
-      targetLang: cfg.targetLang,
-    });
-
-    if (replace) {
-      await editor.edit((eb) => eb.replace(sel, result.text));
-      vscode.window.setStatusBarMessage(`✔ Replaced with translation (${result.provider})`, 3000);
+  const cacheKey = JSON.stringify([cfg.provider, cfg.sourceLang, cfg.targetLang, text]);
+  let result = getCachedTranslation(cacheKey);
+  if (!result) {
+    const translator = createTranslator(cfg);
+    const progress = vscode.window.setStatusBarMessage(
+      `$(sync~spin) Translating with ${translator.name}...`
+    );
+    try {
+      result = await translator.translate({
+        text,
+        sourceLang: cfg.sourceLang,
+        targetLang: cfg.targetLang,
+      });
+      setCachedTranslation(cacheKey, result);
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Translate failed: ${err.message}`);
       return;
+    } finally {
+      progress.dispose();
     }
-
-    await showResult(editor, sel, text, result.text, cfg.displayMode);
-  } catch (err: any) {
-    vscode.window.showErrorMessage(`Translate failed: ${err.message}`);
-  } finally {
-    progress.dispose();
   }
+
+  if (replace) {
+    await editor.edit((eb) => eb.replace(sel, result.text));
+    vscode.window.setStatusBarMessage(`✔ Replaced with translation (${result.provider})`, 3000);
+  } else {
+    await showResult(editor, sel, text, result.text, cfg.displayMode);
+  }
+}
+
+const TRANSLATION_CACHE_MAX = 200;
+const translationCache = new Map<string, TranslateResult>();
+
+function getCachedTranslation(key: string): TranslateResult | undefined {
+  const hit = translationCache.get(key);
+  if (!hit) {
+    return undefined;
+  }
+  translationCache.delete(key);
+  translationCache.set(key, hit);
+  return hit;
+}
+
+function setCachedTranslation(key: string, result: TranslateResult) {
+  const existed = translationCache.delete(key);
+  if (!existed && translationCache.size >= TRANSLATION_CACHE_MAX) {
+    const oldest = translationCache.keys().next().value;
+    if (oldest !== undefined) {
+      translationCache.delete(oldest);
+    }
+  }
+  translationCache.set(key, result);
 }
 
 async function showResult(
