@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-30
+
+### Added
+
+- Translation cache: repeated translations of the same text with the same provider/language pair are served from an in-memory LRU cache, avoiding redundant API calls.
+
+### Changed
+
+- Refined OpenAI translator system prompt.
+
 ## [0.1.0] - 2026-05-23
 
 ### Added
