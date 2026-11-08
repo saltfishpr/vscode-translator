@@ -40,12 +40,12 @@ jobs:
           fi
 
       - name: Package extension
-        run: npx @vscode/vsce package --out "vscode-translator-${GITHUB_REF_NAME}.vsix"
+        run: npx @vscode/vsce package --out "vscode-llm-translator-${GITHUB_REF_NAME}.vsix"
 
       - name: Publish extension to Marketplace
-        run: npx @vscode/vsce publish --oidc --skip-duplicate --packagePath "vscode-translator-${GITHUB_REF_NAME}.vsix"
+        run: npx @vscode/vsce publish --oidc --skip-duplicate --packagePath "vscode-llm-translator-${GITHUB_REF_NAME}.vsix"
 
       - name: Publish extension to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: "vscode-translator-${{ github.ref_name }}.vsix"
+          files: "vscode-llm-translator-${{ github.ref_name }}.vsix"

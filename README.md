@@ -1,4 +1,4 @@
-# vscode-translator
+# Translator
 
 使用 Google / DeepL / OpenAI / 百度 等翻译服务翻译编辑器中选中的文本。
 
@@ -55,7 +55,7 @@
 
 ## 发布前检查
 
-发布 v0.1.0 前建议执行：
+发布前建议执行：
 
 ```sh
 npm run package
@@ -64,7 +64,7 @@ npm run package
 如需打包 VSIX：
 
 ```sh
-npx vsce package
+npx @vscode/vsce package
 ```
 
 ## 已知问题
@@ -72,6 +72,10 @@ npx vsce package
 暂无。如发现问题请提交 Issue。
 
 ## 更新日志
+
+### 0.1.3
+
+- 扩展更名为 `vscode-llm-translator`，显示名为 `Translator`，扩展 ID 为 `saltfishpr.vscode-llm-translator`。
 
 ### 0.1.1
 

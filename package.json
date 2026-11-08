@@ -1,6 +1,6 @@
 {
-  "name": "vscode-translator",
-  "displayName": "vscode-translator",
+  "name": "vscode-llm-translator",
+  "displayName": "Translator",
   "description": "Translate selected text using Google / DeepL / OpenAI / Baidu APIs",
   "version": "0.1.2",
   "publisher": "saltfishpr",

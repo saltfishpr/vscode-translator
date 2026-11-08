@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.2] - 2026-11-08
+## [0.1.3] - 2026-11-08
 
 ### Changed
 
+- Renamed the extension to `vscode-llm-translator` with the display name `Translator`. The extension ID is now `saltfishpr.vscode-llm-translator`.
 - Releases are now published to the VS Code Marketplace automatically via GitHub Actions.
 
 ## [0.1.1] - 2026-05-30
