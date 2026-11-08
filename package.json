@@ -2,7 +2,7 @@
   "name": "vscode-llm-translator",
   "displayName": "Translator for VS Code",
   "description": "Translate selected text using Google / DeepL / OpenAI / Baidu APIs",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "saltfishpr",
   "repository": {
     "type": "git",
