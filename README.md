@@ -1,4 +1,4 @@
-# Translator
+# Translator for VS Code
 
 使用 Google / DeepL / OpenAI / 百度 等翻译服务翻译编辑器中选中的文本。
 
@@ -73,9 +73,9 @@ npx @vscode/vsce package
 
 ## 更新日志
 
-### 0.1.3
+### 0.1.4
 
-- 扩展更名为 `vscode-llm-translator`，显示名为 `Translator`，扩展 ID 为 `saltfishpr.vscode-llm-translator`。
+- 扩展更名为 `vscode-llm-translator`，显示名为 `Translator for VS Code`，扩展 ID 为 `saltfishpr.vscode-llm-translator`。
 
 ### 0.1.1
 
