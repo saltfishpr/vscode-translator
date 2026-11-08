@@ -1,5 +1,8 @@
 name: Release
 
+# Requires a Marketplace Trusted Publishing policy for this repository and
+# workflow. Create it under the publisher's Trusted Publishing tab.
+
 on:
   push:
     tags:
@@ -7,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -36,7 +40,10 @@ jobs:
           fi
 
       - name: Package extension
-        run: npx vsce package --out "vscode-translator-${GITHUB_REF_NAME}.vsix"
+        run: npx @vscode/vsce package --out "vscode-translator-${GITHUB_REF_NAME}.vsix"
+
+      - name: Publish extension to Marketplace
+        run: npx @vscode/vsce publish --oidc --skip-duplicate --packagePath "vscode-translator-${GITHUB_REF_NAME}.vsix"
 
       - name: Publish extension to GitHub Release
         uses: softprops/action-gh-release@v2
