@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getConfig, updateConfig } from './config';
-import { createTranslator } from './translators';
-import type { TranslateResult } from './translators';
+import { registerCommentHover } from './commentHover';
+import { translate } from './translation';
 
 let statusBar: vscode.StatusBarItem;
 
@@ -11,6 +11,7 @@ export function activate(ctx: vscode.ExtensionContext) {
   refreshStatusBar();
   statusBar.show();
   ctx.subscriptions.push(statusBar);
+  registerCommentHover(ctx);
 
   ctx.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -21,35 +22,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.commands.registerCommand('translator.translateSelection', () => runTranslate(false)),
     vscode.commands.registerCommand('translator.translateAndReplace', () => runTranslate(true)),
     vscode.commands.registerCommand('translator.pickProvider', pickProvider),
-    vscode.commands.registerCommand('translator.pickTargetLang', pickTargetLang),
-    vscode.commands.registerCommand('translator._copy', async (text: string) => {
-      await vscode.env.clipboard.writeText(text);
-      vscode.window.setStatusBarMessage('✔ Copied translation', 2000);
-    }),
-    vscode.commands.registerCommand(
-      'translator._replace',
-      async (args: {
-        uri: string;
-        range: {
-          start: { line: number; character: number };
-          end: { line: number; character: number };
-        };
-        text: string;
-      }) => {
-        const uri = vscode.Uri.parse(args.uri);
-        const ed = vscode.window.visibleTextEditors.find(
-          (e) => e.document.uri.toString() === uri.toString()
-        );
-        if (!ed) {
-          return;
-        }
-        const range = new vscode.Range(
-          new vscode.Position(args.range.start.line, args.range.start.character),
-          new vscode.Position(args.range.end.line, args.range.end.character)
-        );
-        await ed.edit((eb) => eb.replace(range, args.text));
-      }
-    )
+    vscode.commands.registerCommand('translator.pickTargetLang', pickTargetLang)
   );
 }
 
@@ -76,150 +49,29 @@ async function runTranslate(replace: boolean) {
 
   const cfg = getConfig();
 
-  const cacheKey = JSON.stringify([cfg.provider, cfg.sourceLang, cfg.targetLang, text]);
-  let result = getCachedTranslation(cacheKey);
-  if (!result) {
-    const translator = createTranslator(cfg);
-    const progress = vscode.window.setStatusBarMessage(
-      `$(sync~spin) Translating with ${translator.name}...`
-    );
-    try {
-      result = await translator.translate({
-        text,
-        sourceLang: cfg.sourceLang,
-        targetLang: cfg.targetLang,
-      });
-      setCachedTranslation(cacheKey, result);
-    } catch (err: any) {
-      vscode.window.showErrorMessage(`Translate failed: ${err.message}`);
-      return;
-    } finally {
-      progress.dispose();
-    }
+  const progress = vscode.window.setStatusBarMessage(`$(sync~spin) Translating with ${cfg.provider}...`);
+  let result;
+  try {
+    result = await translate(text, cfg);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(`Translate failed: ${err.message}`);
+    return;
+  } finally {
+    progress.dispose();
   }
 
   if (replace) {
     await editor.edit((eb) => eb.replace(sel, result.text));
     vscode.window.setStatusBarMessage(`✔ Replaced with translation (${result.provider})`, 3000);
   } else {
-    await showResult(editor, sel, text, result.text, cfg.displayMode);
-  }
-}
-
-const TRANSLATION_CACHE_MAX = 200;
-const translationCache = new Map<string, TranslateResult>();
-
-function getCachedTranslation(key: string): TranslateResult | undefined {
-  const hit = translationCache.get(key);
-  if (!hit) {
-    return undefined;
-  }
-  translationCache.delete(key);
-  translationCache.set(key, hit);
-  return hit;
-}
-
-function setCachedTranslation(key: string, result: TranslateResult) {
-  const existed = translationCache.delete(key);
-  if (!existed && translationCache.size >= TRANSLATION_CACHE_MAX) {
-    const oldest = translationCache.keys().next().value;
-    if (oldest !== undefined) {
-      translationCache.delete(oldest);
-    }
-  }
-  translationCache.set(key, result);
-}
-
-async function showResult(
-  editor: vscode.TextEditor,
-  sel: vscode.Selection,
-  original: string,
-  translated: string,
-  mode: 'hover' | 'panel'
-) {
-  switch (mode) {
-    case 'panel': {
-      const panel = vscode.window.createWebviewPanel(
-        'translatorResult',
-        'Translation Result',
-        vscode.ViewColumn.Beside,
-        { enableScripts: false }
-      );
-      panel.webview.html = renderPanelHtml(original, translated);
-      break;
-    }
-    case 'hover':
-    default: {
-      await showHoverAtSelection(editor, sel, original, translated);
-    }
-  }
-}
-
-async function showHoverAtSelection(
-  editor: vscode.TextEditor,
-  sel: vscode.Selection,
-  original: string,
-  translated: string
-) {
-  const range = new vscode.Range(sel.start, sel.end);
-  const md = new vscode.MarkdownString();
-  md.isTrusted = true;
-  md.supportHtml = false;
-  md.appendMarkdown(`**Translation**\n\n${translated}\n\n---\n\n`);
-  const copyArgs = encodeURIComponent(JSON.stringify([translated]));
-  const replaceArgs = encodeURIComponent(
-    JSON.stringify([
-      { uri: editor.document.uri.toString(), range: serializeRange(range), text: translated },
-    ])
-  );
-  md.appendMarkdown(
-    `[Copy](command:translator._copy?${copyArgs}) · [Replace](command:translator._replace?${replaceArgs})`
-  );
-
-  const provider = vscode.languages.registerHoverProvider(
-    { scheme: editor.document.uri.scheme, pattern: editor.document.uri.fsPath },
-    {
-      provideHover(doc, pos) {
-        if (doc.uri.toString() !== editor.document.uri.toString()) {
-          return;
-        }
-        if (!range.contains(pos)) {
-          return;
-        }
-        return new vscode.Hover(md, range);
-      },
-    }
-  );
-
-  // 把光标移动到选区起点，让悬浮框出现在选中文本附近
-  editor.selection = new vscode.Selection(sel.start, sel.start);
-  await vscode.commands.executeCommand('editor.action.showHover');
-  // 恢复原选区
-  editor.selection = sel;
-
-  // 在用户切换选区或编辑后清理 provider；延迟订阅，避免上面恢复选区立即触发
-  const disposables: vscode.Disposable[] = [provider];
-  const cleanup = () => {
-    disposables.forEach((d) => d.dispose());
-  };
-  setTimeout(() => {
-    disposables.push(
-      vscode.window.onDidChangeTextEditorSelection(() => cleanup()),
-      vscode.workspace.onDidChangeTextDocument((e) => {
-        if (e.document.uri.toString() === editor.document.uri.toString()) {
-          cleanup();
-        }
-      })
+    const panel = vscode.window.createWebviewPanel(
+      'translatorResult',
+      'Translation Result',
+      vscode.ViewColumn.Beside,
+      { enableScripts: false }
     );
-  }, 300);
-  setTimeout(cleanup, 30000);
-}
-
-function serializeRange(r: vscode.Range) {
-  return {
-    start: { line: r.start.line, character: r.start.character },
-    end: { line: r.end.line, character: r.end.character },
-  };
+    panel.webview.html = renderPanelHtml(text, result.text);
+  }
 }
 
 function renderPanelHtml(original: string, translated: string): string {
@@ -241,9 +93,12 @@ function renderPanelHtml(original: string, translated: string): string {
 
 async function pickProvider() {
   const items: vscode.QuickPickItem[] = [
+    { label: 'openai', description: 'OpenAI' },
+    { label: 'deepseek', description: 'DeepSeek' },
+    { label: 'zai', description: 'Z.AI（pi-ai 内置 Coding Plan 端点）' },
+    { label: 'openai-compatible', description: '自定义兼容接口（如智谱、Z.AI 普通 API、火山方舟）' },
     { label: 'google', description: 'Google Translate' },
     { label: 'deepl', description: 'DeepL' },
-    { label: 'openai', description: 'OpenAI / compatible LLM' },
     { label: 'baidu', description: 'Baidu Translate' },
   ];
   const pick = await vscode.window.showQuickPick(items, {

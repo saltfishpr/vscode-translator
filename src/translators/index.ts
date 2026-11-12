@@ -2,7 +2,7 @@ import { TranslatorConfig } from '../config';
 import { Translator } from './base';
 import { GoogleTranslator } from './google';
 import { DeepLTranslator } from './deepl';
-import { OpenAITranslator } from './openai';
+import { LLMTranslator } from './llm';
 import { BaiduTranslator } from './baidu';
 
 export function createTranslator(cfg: TranslatorConfig): Translator {
@@ -12,7 +12,10 @@ export function createTranslator(cfg: TranslatorConfig): Translator {
     case 'deepl':
       return new DeepLTranslator(cfg.deepl.apiKey, cfg.deepl.useFree);
     case 'openai':
-      return new OpenAITranslator(cfg.openai.apiKey, cfg.openai.baseUrl, cfg.openai.model);
+    case 'deepseek':
+    case 'zai':
+    case 'openai-compatible':
+      return new LLMTranslator(cfg.provider, cfg.apiKey, cfg.model, cfg.thinkingLevel, cfg.baseUrl);
     case 'baidu':
       return new BaiduTranslator(cfg.baidu.appid, cfg.baidu.secret);
     default:

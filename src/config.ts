@@ -1,13 +1,18 @@
 import * as vscode from 'vscode';
 
+export type LLMProvider = 'openai' | 'deepseek' | 'zai' | 'openai-compatible';
+export type ThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+
 export interface TranslatorConfig {
-  provider: 'google' | 'deepl' | 'openai' | 'baidu';
+  provider: 'google' | 'deepl' | 'baidu' | LLMProvider;
   targetLang: string;
   sourceLang: string;
-  displayMode: 'hover' | 'panel';
+  apiKey: string;
+  model: string;
+  thinkingLevel: ThinkingLevel;
+  baseUrl: string;
   google: { apiKey: string };
   deepl: { apiKey: string; useFree: boolean };
-  openai: { apiKey: string; baseUrl: string; model: string };
   baidu: { appid: string; secret: string };
 }
 
@@ -17,16 +22,14 @@ export function getConfig(): TranslatorConfig {
     provider: c.get('provider', 'google'),
     targetLang: c.get('targetLang', 'zh-CN'),
     sourceLang: c.get('sourceLang', 'auto'),
-    displayMode: c.get('displayMode', 'hover'),
+    apiKey: c.get('apiKey', ''),
+    model: c.get('model', 'gpt-5.4-mini'),
+    thinkingLevel: c.get('thinkingLevel', 'off'),
+    baseUrl: c.get('baseUrl', ''),
     google: { apiKey: c.get('google.apiKey', '') },
     deepl: {
       apiKey: c.get('deepl.apiKey', ''),
       useFree: c.get('deepl.useFree', true),
-    },
-    openai: {
-      apiKey: c.get('openai.apiKey', ''),
-      baseUrl: c.get('openai.baseUrl', 'https://api.openai.com/v1'),
-      model: c.get('openai.model', 'gpt-5.4-mini'),
     },
     baidu: {
       appid: c.get('baidu.appid', ''),

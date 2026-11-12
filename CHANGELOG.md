@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- DeepSeek, Z.AI, and generic OpenAI-compatible LLM translation through `@earendil-works/pi-ai`, with configurable thinking levels.
+- On-demand documentation translation in the editor hover, with copy and retry actions, for Go, TypeScript / TSX, JavaScript / JSX, Python, Java, C / C++, C#, Rust, PHP, and Ruby.
+- Bundled Tree-sitter WASM parsers to extract declaration-bound comments, including definitions in other files.
+- Preserve documentation code, links, tags, and declaration identifiers during translation; deduplicate concurrent requests.
+- Language-specific extraction for Python docstrings, Rust outer documentation, C# XML documentation, Javadoc, PHPDoc, Doxygen, and Ruby RDoc.
+
+### Changed
+
+- LLM credentials and model settings now use `translator.apiKey`, `translator.model`, and `translator.thinkingLevel`. Built-in providers use SDK endpoints; only `openai-compatible` reads `translator.baseUrl`. Removed the old `translator.openai.*` settings; migration is manual.
+- Selected-text translations now always display the original and translated text in a side-by-side Webview Panel.
+- Removed the selected-text result hover, its copy/replace actions, and the `translator.displayMode` setting. The translate-and-replace command remains available.
+
 ## [0.1.4] - 2026-11-08
 
 ### Changed
