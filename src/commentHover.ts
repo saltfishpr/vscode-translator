@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
-import { CommentParser } from "./comments";
-import { commentLanguages } from "./commentLanguages";
-import type { SourceComment } from "./comments";
+import { CommentExtractor } from "./comments/parser";
+import type { DocumentationTarget } from "./comments/types";
 import { getConfig } from "./config";
 import type { TranslatorConfig } from "./config";
 import { cachedTranslation, translate, translationKey } from "./translation";
@@ -14,7 +13,7 @@ interface HoverSession {
   source: vscode.TextDocument;
   sourceVersion: number;
   range: vscode.Range;
-  comment: SourceComment;
+  comment: string;
   config: TranslatorConfig;
   key: string;
   pending?: Promise<void>;
@@ -22,7 +21,7 @@ interface HoverSession {
 }
 
 export function registerCommentHover(ctx: vscode.ExtensionContext) {
-  const parser = new CommentParser(ctx.asAbsolutePath("dist/parsers"));
+  const extractor = new CommentExtractor(ctx.asAbsolutePath("dist/parsers"));
   const sessions = new Map<string, HoverSession>();
   const output = vscode.window.createOutputChannel("Translator");
   const current = (session: HoverSession) =>
@@ -31,13 +30,12 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
     !session.source.isClosed &&
     session.document.version === session.version &&
     session.source.version === session.sourceVersion &&
-    session.key === translationKey(session.comment.text, getConfig(), session.comment);
+    session.key === translationKey(session.comment, getConfig());
 
   ctx.subscriptions.push(
-    parser,
+    extractor,
     output,
     vscode.workspace.onDidChangeTextDocument(({ document }) => {
-      parser.forget(document.uri.toString());
       for (const [id, session] of sessions) {
         if (session.document === document || session.source === document) {
           sessions.delete(id);
@@ -45,7 +43,6 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       }
     }),
     vscode.workspace.onDidCloseTextDocument((document) => {
-      parser.forget(document.uri.toString());
       for (const [id, session] of sessions) {
         if (session.document === document || session.source === document) {
           sessions.delete(id);
@@ -65,7 +62,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       }
       session.error = undefined;
       const progress = vscode.window.setStatusBarMessage("$(sync~spin) 正在翻译注释…");
-      session.pending = translate(session.comment.text, session.config, session.comment)
+      session.pending = translate(session.comment, session.config)
         .then(
           () => {},
           (error: unknown) => {
@@ -111,7 +108,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       { language: "*" },
       {
         async provideHover(document, position, token) {
-          if (!Object.hasOwn(commentLanguages, document.languageId)) {
+          if (!extractor.supportsLanguage(document.languageId)) {
             return;
           }
           const version = document.version;
@@ -120,22 +117,22 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
             return;
           }
           try {
-            const read = async (source: vscode.TextDocument, at: vscode.Position, atDeclarationStart = false) => {
+            const read = async (
+              source: vscode.TextDocument,
+              at: vscode.Position,
+              match: DocumentationTarget["match"],
+            ) => {
               const sourceVersion = source.version;
-              const comment = await parser.read(
-                source.uri.toString(),
-                sourceVersion,
-                source.languageId,
-                source.getText(),
-                source.offsetAt(at),
-                atDeclarationStart,
+              const comment = await extractor.extract(
+                { languageId: source.languageId, text: source.getText() },
+                { offset: source.offsetAt(at), match },
               );
               if (comment && !source.isClosed && source.version === sourceVersion) {
                 return { source, sourceVersion, comment };
               }
             };
 
-            let found = await read(document, position);
+            let found = await read(document, position, "name");
             if (token.isCancellationRequested || document.version !== version) {
               return;
             }
@@ -156,7 +153,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
                     : definition.range.start;
                 let candidate;
                 try {
-                  candidate = await read(await vscode.workspace.openTextDocument(uri), at, true);
+                  candidate = await read(await vscode.workspace.openTextDocument(uri), at, "name-or-declaration-start");
                 } catch {
                   // Definitions can point to inaccessible dependencies or unsupported virtual documents.
                   continue;
@@ -165,7 +162,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
                   return;
                 }
                 if (candidate) {
-                  if (found && found.comment.text !== candidate.comment.text) {
+                  if (found && found.comment !== candidate.comment) {
                     // Do not choose an arbitrary comment when the symbol resolves ambiguously.
                     return;
                   }
@@ -178,7 +175,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
             }
 
             const config = getConfig();
-            const key = translationKey(found.comment.text, config, found.comment);
+            const key = translationKey(found.comment, config);
             let session = [...sessions.values()].find(
               (entry) =>
                 entry.document === document &&

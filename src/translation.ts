@@ -1,14 +1,13 @@
 import type { TranslatorConfig } from "./config";
 import { createTranslator } from "./translators";
 import type { TranslateResult } from "./translators";
-import type { SourceComment } from "./comments";
 
 type TimedTranslateResult = TranslateResult & { durationMs: number };
 
 const cache = new Map<string, TimedTranslateResult>();
 const pending = new Map<string, Promise<TimedTranslateResult>>();
 
-export function translationKey(text: string, cfg: TranslatorConfig, comment?: SourceComment): string {
+export function translationKey(text: string, cfg: TranslatorConfig): string {
   return JSON.stringify([
     cfg.provider,
     cfg.sourceLang,
@@ -18,8 +17,6 @@ export function translationKey(text: string, cfg: TranslatorConfig, comment?: So
       : [cfg.model, cfg.thinkingLevel, cfg.provider === "openai-compatible" ? cfg.baseUrl : undefined],
     cfg.provider === "deepl" ? cfg.deepl.useFree : undefined,
     text,
-    comment?.identifiers,
-    comment?.style,
   ]);
 }
 
@@ -32,12 +29,8 @@ export function cachedTranslation(key: string): TimedTranslateResult | undefined
   return result;
 }
 
-export async function translate(
-  text: string,
-  cfg: TranslatorConfig,
-  comment?: SourceComment,
-): Promise<TimedTranslateResult> {
-  const key = translationKey(text, cfg, comment);
+export async function translate(text: string, cfg: TranslatorConfig): Promise<TimedTranslateResult> {
+  const key = translationKey(text, cfg);
   const cached = cachedTranslation(key);
   if (cached) {
     return cached;
