@@ -166,8 +166,7 @@
     "lint": "eslint src",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "node --test out/test/*.unit.js && vscode-test",
-    "test:unit": "npm run compile-tests && node --test out/test/*.unit.js"
+    "test": "vscode-test"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -185,6 +184,6 @@
   },
   "dependencies": {
     "@earendil-works/pi-ai": "1.5.2",
-    "@vscode/tree-sitter-wasm": "^0.3.1"
+    "markdown-it": "^15.0.3"
   }
 }

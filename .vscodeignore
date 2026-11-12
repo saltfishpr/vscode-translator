@@ -2,6 +2,7 @@
 .vscode-test/**
 .github/**
 out/**
+dist/parsers/**
 node_modules/**
 src/**
 .gitignore

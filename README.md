@@ -1,13 +1,13 @@
 # Translator for VS Code
 
-使用多种 LLM 服务及 Google / DeepL / 百度，翻译选中文本和 Hover 中的文档注释。
+使用多种 LLM 服务及 Google / DeepL / 百度，翻译选中文本和语言扩展提供的 Hover 文档。
 
 ## 功能
 
 - 支持通过 `@earendil-works/pi-ai` 接入的 OpenAI、DeepSeek、Z.AI 和 OpenAI-compatible 等 LLM 服务，以及 Google、DeepL 和百度。
 - 翻译选中文本，在右侧 Webview Panel 中展示原文和译文。
 - 翻译并替换选中文本。
-- 在 Hover 中点击「翻译」，在同一浮窗中追加注释译文，并支持复制和失败重试。
+- 在 Hover 中点击「翻译」，在右侧 Panel 展示文档原文和译文；Markdown 代码块原样保留，不发送给翻译服务。
 - 翻译结果自动缓存：相同文本、相同服务和语言对的结果会被复用，减少重复 API 调用。
 - 通过命令面板或状态栏快速切换翻译服务和目标语言。
 
@@ -18,38 +18,20 @@
 3. 需要切换服务时，点击状态栏中的翻译服务项，或执行 `Translate: Switch Provider`。
 4. 需要切换目标语言时，执行 `Translate: Switch Target Language`。
 
-### 翻译 Hover 注释
+### 翻译 Hover 文档
 
-1. 在当前支持的语言中，将鼠标悬停在具有文档注释的符号上。
-2. 点击 Hover 中的「翻译」。浏览 Hover 不会调用翻译服务。
-3. 翻译期间显示 VS Code 原生加载提示和状态栏进度；成功后在同一 Hover 中追加译文、目标语言和翻译服务。
-4. 点击「复制译文」复制结果；失败时可在 Hover 内重试。关闭浮窗后，请求完成不会重新打开浮窗，再次悬停可复用缓存。
+1. 将鼠标悬停在编辑器中的符号上，点击 Hover 中的「翻译」。仅浏览 Hover 不会调用翻译服务。
+2. 扩展重新获取该位置所有 HoverProvider 返回的文档，在右侧 Panel 显示加载状态、原文和译文，不改变原有 Hover 或编辑器选区。
+3. Markdown 围栏代码块（反引号、波浪线）、缩进代码块以及列表、引用中的代码块均原样保留，不发送给翻译服务。旧版 Hover 的 `{ language, value }` 内容同样视为代码块。
+4. Panel 显示目标语言、翻译服务和耗时；失败后可点击「重试」。关闭 Panel 后，完成的请求不会重新打开它。相同正文片段可复用翻译缓存。
 
-### 当前语言支持
+### 语言支持与边界
 
-语言支持由对应的声明和注释解析规则提供。当前支持：
-
-| 语言                               | 提取内容                                                                            |
-| ---------------------------------- | ----------------------------------------------------------------------------------- |
-| Go                                 | 函数、方法、类型、字段、接口成员、常量和变量的关联注释                              |
-| TypeScript / TSX、JavaScript / JSX | 函数、类、接口、属性、方法和变量的 JSDoc；声明类型以对应语言语法为准                |
-| Python                             | 类、函数和方法体中首条语句的 docstring，包括装饰器修饰的声明                        |
-| Java                               | 类型、方法、构造函数、字段和枚举成员的 Javadoc                                      |
-| C / C++                            | 函数、类型、字段、枚举成员、变量和宏的 Doxygen 或紧邻声明的注释                     |
-| C#                                 | 类型、方法、构造函数、属性、字段和事件的 XML 文档注释                               |
-| Rust                               | 类型、函数、方法、字段、枚举成员、常量等声明的外层文档注释，支持声明前的属性        |
-| PHP                                | 类型、函数、方法、属性和常量的 PHPDoc                                               |
-| Ruby                               | 类、模块、方法、常量和 `attr_reader` / `attr_writer` / `attr_accessor` 的 RDoc 注释 |
-
-扩展使用内置 Tree-sitter WASM 解析器，从声明源码提取关联注释，不要求安装额外的解析工具链。在引用位置使用语言扩展提供的 DefinitionProvider 定位声明，因此跨文件翻译需要相应语言扩展支持“转到定义”。
-
-- 没有注释的成员不会继承其外层类型的注释；Python 不会将函数体中的任意字符串误当成 docstring，Rust 不会将内层文档注释关联到后续声明。
-- 注释原文直接发送给翻译服务，代码、链接和文档标签的保留情况取决于翻译服务。
-- C 与 C++ 共用 C++ 语法解析器，按源码识别常见声明，不执行宏展开。Python 不会执行 docstring 所在代码。
-- 找不到关联注释、声明源码不可读、定义存在不同的候选注释，或语言暂不支持时，不显示「翻译」。不会降级为翻译整段 Hover。
-- Git 历史版本文档（`git:`，包括 diff 中的历史版本一侧）不显示翻译入口，避免出现只有「翻译」按钮的空浮窗。
-- 源码注释可能与语言扩展整理后的 Hover 文档不同；源码之外的文档不在当前支持范围。暂不支持 Thrift。
-- 原有 Hover 内容由语言扩展提供，保持不变；多个 HoverProvider 的最终排列顺序由 VS Code 决定。
+- 支持所有通过 VS Code HoverProvider 提供文档的语言扩展，包括 Go package 文档；不再解析源码或依赖“转到定义”。
+- 「翻译」入口按词范围显示，因此没有文档的词也可能出现入口。文档为空或仅包含代码块时，Panel 提示没有可翻译正文，不调用翻译服务。
+- VS Code 公共 API 不能读取已渲染浮窗的 DOM。点击时会重新查询 HoverProvider，结果不保证包含诊断信息、调试器内容等其他浮窗元素。
+- Panel 沿用纯文本展示，保留 Markdown 源文本，不执行文档或译文中的 HTML、脚本及链接。代码块之外的 Markdown 格式、链接和行内代码由翻译服务处理。
+- 原有 Hover 内容保持不变；多个 HoverProvider 的最终排列顺序由 VS Code 决定。
 
 ## 要求
 
@@ -105,7 +87,6 @@ DeepSeek 使用 SDK 内置端点和模型信息：
 - 智谱普通 API 的基础地址：`https://open.bigmodel.cn/api/paas/v4`。
 - Z.AI 普通 API 的基础地址：`https://api.z.ai/api/paas/v4`。内置 `zai` 使用 pi-ai 的 Coding Plan 端点，不是普通 API；使用前请确认套餐允许该用途。
 - 兼容接口通过 SDK 按端点识别协议差异；未知端点使用 OpenAI Chat Completions 的 `reasoning_effort`。模型不支持该参数或不能关闭思考时，需要选择匹配的模型和档位。
-- 此次保持现有 Hover 的完整结果展示，不在原生 Hover 内逐段刷新。
 - 旧的 `translator.openai.apiKey`、`translator.openai.model` 分别改为 `translator.apiKey`、`translator.model`。旧的 `translator.openai.baseUrl` 已移除；使用自定义端点时改选 `openai-compatible` 并填写 `translator.baseUrl`。扩展不会自动迁移旧设置。
 
 ## 命令与快捷键
@@ -136,6 +117,11 @@ npx @vscode/vsce package
 暂无。如发现问题请提交 Issue。
 
 ## 更新日志
+
+### 未发布
+
+- Hover 翻译改为读取语言扩展提供的文档，在右侧 Panel 展示原文和译文，移除按语言解析源码及 Tree-sitter WASM 依赖。
+- Markdown 代码块不发送给翻译服务，译文中原样保留。
 
 ### 0.1.5
 

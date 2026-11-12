@@ -1,24 +1,11 @@
 # Third-party notices
 
-The extension bundles the Tree-sitter WASM runtime and language grammars distributed by
-[@vscode/tree-sitter-wasm](https://github.com/microsoft/vscode-tree-sitter-wasm).
+## MIT
 
-The runtime's MIT license is included in `dist/parsers/LICENSE`.
-
-## Language grammars (MIT)
-
-- [tree-sitter-go](https://github.com/tree-sitter/tree-sitter-go): Copyright (c) 2014 Max Brunsfeld
-- [tree-sitter-typescript](https://github.com/tree-sitter/tree-sitter-typescript): Copyright (c) 2017 Max Brunsfeld
-- [tree-sitter-javascript](https://github.com/tree-sitter/tree-sitter-javascript): Copyright (c) 2014 Max Brunsfeld
-- [tree-sitter-python](https://github.com/tree-sitter/tree-sitter-python): Copyright (c) 2016 Max Brunsfeld
-- [tree-sitter-java](https://github.com/tree-sitter/tree-sitter-java): Copyright (c) 2017 Ayman Nadeem
-- [tree-sitter-c](https://github.com/tree-sitter/tree-sitter-c) and [tree-sitter-cpp](https://github.com/tree-sitter/tree-sitter-cpp): Copyright (c) 2014 Max Brunsfeld
-- [tree-sitter-c-sharp](https://github.com/tree-sitter/tree-sitter-c-sharp): Copyright (c) 2014-2023 Max Brunsfeld, Damien Guard, Amaan Qureshi, and contributors.
-- [tree-sitter-rust](https://github.com/tree-sitter/tree-sitter-rust): Copyright (c) 2017 Maxim Sokolov
-- [tree-sitter-php](https://github.com/tree-sitter/tree-sitter-php): Copyright (c) 2017 Josh Vera, GitHub; Copyright (c) 2019 Max Brunsfeld, Amaan Qureshi, Christian Frøystad, Caleb White
-- [tree-sitter-ruby](https://github.com/tree-sitter/tree-sitter-ruby): Copyright (c) 2016 Rob Rix
-
-The MIT License (MIT)
+- `markdown-it`: Copyright (c) 2014 Vitaly Puzrin, Alex Kocharin.
+- `linkify-it`: Copyright (c) 2015 Vitaly Puzrin.
+- `mdurl`: Copyright (c) 2015 Vitaly Puzrin, Alex Kocharin. Copyright Joyent, Inc. and other Node contributors. All rights reserved.
+- `punycode.js` and `uc.micro`: Copyright Mathias Bynens <https://mathiasbynens.be/>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,3 +24,17 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## entities (BSD-2-Clause)
+
+Copyright (c) Felix Böhm
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
