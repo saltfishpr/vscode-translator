@@ -136,7 +136,7 @@ npx @vscode/vsce package
 
 ## 更新日志
 
-### Unreleased
+### 0.1.5
 
 - LLM 调用改用 `@earendil-works/pi-ai`，新增 DeepSeek、Z.AI、通用兼容接口和 `thinkingLevel` 配置；统一 LLM 的 API Key、模型设置，Base URL 仅供兼容接口使用。
 - 新增文档注释的按需 Hover 翻译、复制和失败重试，支持 Go、TypeScript / TSX、JavaScript / JSX、Python、Java、C / C++、C#、Rust、PHP 和 Ruby。

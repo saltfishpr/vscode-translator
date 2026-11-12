@@ -2,7 +2,7 @@
   "name": "vscode-llm-translator",
   "displayName": "Translator for VS Code",
   "description": "Translate selected text and hover documentation using multiple LLM providers, Google, DeepL, and Baidu",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "saltfishpr",
   "repository": {
     "type": "git",

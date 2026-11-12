@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-12
+
 ### Added
 
 - DeepSeek, Z.AI, and generic OpenAI-compatible LLM translation through `@earendil-works/pi-ai`, with configurable thinking levels.
@@ -20,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LLM credentials and model settings now use `translator.apiKey`, `translator.model`, and `translator.thinkingLevel`. Built-in providers use SDK endpoints; only `openai-compatible` reads `translator.baseUrl`. Removed the old `translator.openai.*` settings; migration is manual.
 - Selected-text translations now always display the original and translated text in a side-by-side Webview Panel.
 - Removed the selected-text result hover, its copy/replace actions, and the `translator.displayMode` setting. The translate-and-replace command remains available.
+
+### Fixed
+
+- Extract comments associated with Go short variable declarations.
+- Resolve the macOS VS Code executable path in integration tests by upgrading `@vscode/test-electron` to 3.1.0.
 
 ## [0.1.4] - 2026-11-08
 
