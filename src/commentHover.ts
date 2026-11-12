@@ -1,11 +1,11 @@
-import { randomUUID } from 'node:crypto';
-import * as vscode from 'vscode';
-import { CommentParser } from './comments';
-import { commentLanguages } from './commentLanguages';
-import type { SourceComment } from './comments';
-import { getConfig } from './config';
-import type { TranslatorConfig } from './config';
-import { cachedTranslation, translate, translationKey } from './translation';
+import { randomUUID } from "node:crypto";
+import * as vscode from "vscode";
+import { CommentParser } from "./comments";
+import { commentLanguages } from "./commentLanguages";
+import type { SourceComment } from "./comments";
+import { getConfig } from "./config";
+import type { TranslatorConfig } from "./config";
+import { cachedTranslation, translate, translationKey } from "./translation";
 
 interface HoverSession {
   id: string;
@@ -22,9 +22,9 @@ interface HoverSession {
 }
 
 export function registerCommentHover(ctx: vscode.ExtensionContext) {
-  const parser = new CommentParser(ctx.asAbsolutePath('dist/parsers'));
+  const parser = new CommentParser(ctx.asAbsolutePath("dist/parsers"));
   const sessions = new Map<string, HoverSession>();
-  const output = vscode.window.createOutputChannel('Translator');
+  const output = vscode.window.createOutputChannel("Translator");
   const current = (session: HoverSession) =>
     sessions.has(session.id) &&
     !session.document.isClosed &&
@@ -53,31 +53,25 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       }
     }),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration('translator')) {
+      if (event.affectsConfiguration("translator")) {
         sessions.clear();
       }
     }),
-    vscode.commands.registerCommand('translator._translateComment', async (id: string) => {
+    vscode.commands.registerCommand("translator._translateComment", async (id: string) => {
       const session = sessions.get(id);
       const editor = vscode.window.activeTextEditor;
-      if (
-        !session ||
-        !editor ||
-        editor.document !== session.document ||
-        !current(session) ||
-        session.pending
-      ) {
+      if (!session || !editor || editor.document !== session.document || !current(session) || session.pending) {
         return;
       }
       session.error = undefined;
-      const progress = vscode.window.setStatusBarMessage('$(sync~spin) 正在翻译注释…');
+      const progress = vscode.window.setStatusBarMessage("$(sync~spin) 正在翻译注释…");
       session.pending = translate(session.comment.text, session.config, session.comment)
         .then(
           () => {},
           (error: unknown) => {
             session.error = error instanceof Error ? error.message : String(error);
             output.appendLine(`Comment translation failed: ${session.error}`);
-          }
+          },
         )
         .finally(() => {
           session.pending = undefined;
@@ -88,20 +82,20 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       // a completed request from reopening a hover the user has already dismissed.
       const selections = editor.selections;
       const anchor = new vscode.Selection(session.range.start, session.range.start);
-      await vscode.commands.executeCommand('editor.action.hideHover');
+      await vscode.commands.executeCommand("editor.action.hideHover");
       if (vscode.window.activeTextEditor !== editor || !current(session)) {
         return;
       }
       editor.selection = anchor;
       try {
-        await vscode.commands.executeCommand('editor.action.showHover', { focus: 'noAutoFocus' });
+        await vscode.commands.executeCommand("editor.action.showHover", { focus: "noAutoFocus" });
       } finally {
         if (editor.selection.isEqual(anchor)) {
           editor.selections = selections;
         }
       }
     }),
-    vscode.commands.registerCommand('translator._copyComment', async (id: string) => {
+    vscode.commands.registerCommand("translator._copyComment", async (id: string) => {
       const session = sessions.get(id);
       if (!session || !current(session)) {
         return;
@@ -109,12 +103,12 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       const result = cachedTranslation(session.key);
       if (result) {
         await vscode.env.clipboard.writeText(result.text);
-        vscode.window.setStatusBarMessage('✔ 已复制译文', 2000);
+        vscode.window.setStatusBarMessage("✔ 已复制译文", 2000);
       }
     }),
     vscode.languages.registerHoverProvider(
       // A wildcard scores below language-specific providers, placing translations after their hovers.
-      { language: '*' },
+      { language: "*" },
       {
         async provideHover(document, position, token) {
           if (!Object.hasOwn(commentLanguages, document.languageId)) {
@@ -126,11 +120,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
             return;
           }
           try {
-            const read = async (
-              source: vscode.TextDocument,
-              at: vscode.Position,
-              atDeclarationStart = false
-            ) => {
+            const read = async (source: vscode.TextDocument, at: vscode.Position, atDeclarationStart = false) => {
               const sourceVersion = source.version;
               const comment = await parser.read(
                 source.uri.toString(),
@@ -138,7 +128,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
                 source.languageId,
                 source.getText(),
                 source.offsetAt(at),
-                atDeclarationStart
+                atDeclarationStart,
               );
               if (comment && !source.isClosed && source.version === sourceVersion) {
                 return { source, sourceVersion, comment };
@@ -150,16 +140,18 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
               return;
             }
             if (!found) {
-              const definitions = await vscode.commands.executeCommand<
-                (vscode.Location | vscode.LocationLink)[]
-              >('vscode.executeDefinitionProvider', document.uri, position);
+              const definitions = await vscode.commands.executeCommand<(vscode.Location | vscode.LocationLink)[]>(
+                "vscode.executeDefinitionProvider",
+                document.uri,
+                position,
+              );
               if (token.isCancellationRequested || document.version !== version) {
                 return;
               }
               for (const definition of definitions ?? []) {
-                const uri = 'targetUri' in definition ? definition.targetUri : definition.uri;
+                const uri = "targetUri" in definition ? definition.targetUri : definition.uri;
                 const at =
-                  'targetUri' in definition
+                  "targetUri" in definition
                     ? (definition.targetSelectionRange ?? definition.targetRange).start
                     : definition.range.start;
                 let candidate;
@@ -194,7 +186,7 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
                 entry.source === found.source &&
                 entry.sourceVersion === found.sourceVersion &&
                 entry.range.isEqual(range) &&
-                entry.key === key
+                entry.key === key,
             );
             if (!session) {
               session = {
@@ -221,13 +213,15 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
             const args = encodeURIComponent(JSON.stringify([session.id]));
             const actions = new vscode.MarkdownString();
             actions.isTrusted = {
-              enabledCommands: ['translator._translateComment', 'translator._copyComment'],
+              enabledCommands: ["translator._translateComment", "translator._copyComment"],
             };
             const result = cachedTranslation(key);
             if (result) {
               const body = new vscode.MarkdownString();
-              body.appendMarkdown('**译文 · ');
-              body.appendText(`${config.targetLang} · ${result.provider} · ${(result.durationMs / 1000).toFixed(2)} 秒`);
+              body.appendMarkdown("**译文 · ");
+              body.appendText(
+                `${config.targetLang} · ${result.provider} · ${(result.durationMs / 1000).toFixed(2)} 秒`,
+              );
               body.appendMarkdown(`**\n\n${result.text}`);
               actions.appendMarkdown(`[复制译文](command:translator._copyComment?${args})`);
               return new vscode.Hover([body, actions], range);
@@ -238,16 +232,14 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
               actions.appendMarkdown(`[重试](command:translator._translateComment?${args})`);
               return new vscode.Hover([error, actions], range);
             }
-            actions.appendMarkdown(
-              `[翻译](command:translator._translateComment?${args} "翻译此符号的注释")`
-            );
+            actions.appendMarkdown(`[翻译](command:translator._translateComment?${args} "翻译此符号的注释")`);
             return new vscode.Hover(actions, range);
           } catch (error) {
             output.appendLine(`Cannot read comment: ${String(error)}`);
             return;
           }
         },
-      }
-    )
+      },
+    ),
   );
 }

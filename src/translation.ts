@@ -1,26 +1,22 @@
-import type { TranslatorConfig } from './config';
-import { createTranslator } from './translators';
-import type { TranslateResult } from './translators';
-import type { SourceComment } from './comments';
+import type { TranslatorConfig } from "./config";
+import { createTranslator } from "./translators";
+import type { TranslateResult } from "./translators";
+import type { SourceComment } from "./comments";
 
 type TimedTranslateResult = TranslateResult & { durationMs: number };
 
 const cache = new Map<string, TimedTranslateResult>();
 const pending = new Map<string, Promise<TimedTranslateResult>>();
 
-export function translationKey(
-  text: string,
-  cfg: TranslatorConfig,
-  comment?: SourceComment
-): string {
+export function translationKey(text: string, cfg: TranslatorConfig, comment?: SourceComment): string {
   return JSON.stringify([
     cfg.provider,
     cfg.sourceLang,
     cfg.targetLang,
-    ['google', 'deepl', 'baidu'].includes(cfg.provider)
+    ["google", "deepl", "baidu"].includes(cfg.provider)
       ? undefined
-      : [cfg.model, cfg.thinkingLevel, cfg.provider === 'openai-compatible' ? cfg.baseUrl : undefined],
-    cfg.provider === 'deepl' ? cfg.deepl.useFree : undefined,
+      : [cfg.model, cfg.thinkingLevel, cfg.provider === "openai-compatible" ? cfg.baseUrl : undefined],
+    cfg.provider === "deepl" ? cfg.deepl.useFree : undefined,
     text,
     comment?.identifiers,
     comment?.style,
@@ -39,7 +35,7 @@ export function cachedTranslation(key: string): TimedTranslateResult | undefined
 export async function translate(
   text: string,
   cfg: TranslatorConfig,
-  comment?: SourceComment
+  comment?: SourceComment,
 ): Promise<TimedTranslateResult> {
   const key = translationKey(text, cfg, comment);
   const cached = cachedTranslation(key);
@@ -61,7 +57,7 @@ export async function translate(
     });
     const result = { ...translation, durationMs: performance.now() - start };
     if (!result.text.trim()) {
-      throw new Error('翻译服务返回了空内容。');
+      throw new Error("翻译服务返回了空内容。");
     }
     if (cache.size >= 200) {
       cache.delete(cache.keys().next().value!);

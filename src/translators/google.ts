@@ -1,7 +1,7 @@
-import { Translator, TranslateParams, TranslateResult } from './base';
+import { Translator, TranslateParams, TranslateResult } from "./base";
 
 export class GoogleTranslator implements Translator {
-  readonly name = 'google';
+  readonly name = "google";
   constructor(private apiKey: string) {}
 
   async translate(p: TranslateParams): Promise<TranslateResult> {
@@ -16,12 +16,12 @@ export class GoogleTranslator implements Translator {
     const body = {
       q: p.text,
       target: p.targetLang,
-      ...(p.sourceLang !== 'auto' ? { source: p.sourceLang } : {}),
-      format: 'text',
+      ...(p.sourceLang !== "auto" ? { source: p.sourceLang } : {}),
+      format: "text",
     };
     const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
@@ -48,7 +48,7 @@ export class GoogleTranslator implements Translator {
       throw new Error(`Google free API ${res.status}`);
     }
     const data: any = await res.json();
-    const text = (data[0] as any[]).map((seg: any) => seg[0]).join('');
+    const text = (data[0] as any[]).map((seg: any) => seg[0]).join("");
     return { text, provider: this.name, detectedSource: data[2] };
   }
 }
