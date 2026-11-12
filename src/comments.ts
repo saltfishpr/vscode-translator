@@ -1,54 +1,62 @@
-import { join } from 'node:path';
-import { Language, Node, Parser, Tree } from '@vscode/tree-sitter-wasm';
-import { commentLanguages } from './commentLanguages';
+import { join } from "node:path";
+import { Language, Node, Parser, Tree } from "@vscode/tree-sitter-wasm";
+import { commentLanguages } from "./commentLanguages";
 
 export interface SourceComment {
   text: string;
   identifiers: string[];
-  style?: 'python';
+  style?: "python";
 }
 
-const commentNodes = new Set(['comment', 'line_comment', 'block_comment']);
+const commentNodes = new Set(["comment", "line_comment", "block_comment"]);
 const identifierNodes = [
-  'identifier', 'type_identifier', 'property_identifier', 'field_identifier',
-  'name', 'variable_name', 'constant',
+  "identifier",
+  "type_identifier",
+  "property_identifier",
+  "field_identifier",
+  "name",
+  "variable_name",
+  "constant",
 ];
 
 function declarationNames(node: Node, grammar: string): Node[] {
+  if (grammar === "go" && node.type === "short_var_declaration") {
+    return (node.childForFieldName("left")?.namedChildren ?? []).filter(
+      (child): child is Node => child?.type === "identifier",
+    );
+  }
   if (
-    node.type === 'shorthand_property_identifier' ||
-    (node.type === 'property_identifier' && node.parent?.type === 'enum_body')
+    node.type === "shorthand_property_identifier" ||
+    (node.type === "property_identifier" && node.parent?.type === "enum_body")
   ) {
     return [node];
   }
-  if (grammar === 'ruby' && node.type === 'assignment') {
-    const left = node.childForFieldName('left');
-    return left?.type === 'constant' ? [left] : [];
+  if (grammar === "ruby" && node.type === "assignment") {
+    const left = node.childForFieldName("left");
+    return left?.type === "constant" ? [left] : [];
   }
-  if (grammar === 'ruby' && node.type === 'call') {
-    const method = node.childForFieldName('method');
-    return method && ['attr_reader', 'attr_writer', 'attr_accessor'].includes(method.text)
-      ? (node.childForFieldName('arguments')?.namedChildren ?? []).filter(
-          (child): child is Node => child?.type === 'simple_symbol'
+  if (grammar === "ruby" && node.type === "call") {
+    const method = node.childForFieldName("method");
+    return method && ["attr_reader", "attr_writer", "attr_accessor"].includes(method.text)
+      ? (node.childForFieldName("arguments")?.namedChildren ?? []).filter(
+          (child): child is Node => child?.type === "simple_symbol",
         )
       : [];
   }
-  if (grammar === 'php' && node.type === 'const_element') {
+  if (grammar === "php" && node.type === "const_element") {
     const name = node.firstNamedChild;
-    return name?.type === 'name' ? [name] : [];
+    return name?.type === "name" ? [name] : [];
   }
-  if (grammar === 'cpp') {
-    const declarators = node
-      .childrenForFieldName('declarator')
-      .filter((child): child is Node => child !== null);
+  if (grammar === "cpp") {
+    const declarators = node.childrenForFieldName("declarator").filter((child): child is Node => child !== null);
     if (declarators.length) {
       return declarators.map((declarator) => {
         let name = declarator;
         for (;;) {
           const nested =
-            name.childForFieldName('declarator') ??
-            (name.type === 'parenthesized_declarator' ? name.firstNamedChild : null) ??
-            (name.type === 'qualified_identifier' ? name.childForFieldName('name') : null);
+            name.childForFieldName("declarator") ??
+            (name.type === "parenthesized_declarator" ? name.firstNamedChild : null) ??
+            (name.type === "qualified_identifier" ? name.childForFieldName("name") : null);
           if (!nested) {
             return name;
           }
@@ -57,10 +65,10 @@ function declarationNames(node: Node, grammar: string): Node[] {
       });
     }
   }
-  const field = node.type === 'pair' ? 'key' : node.type === 'field_definition' ? 'property' : 'name';
+  const field = node.type === "pair" ? "key" : node.type === "field_definition" ? "property" : "name";
   const names = node.childrenForFieldName(field).filter((name): name is Node => name !== null);
-  if (grammar === 'go' && node.type === 'field_declaration' && names.length === 0) {
-    const embeddedType = node.childForFieldName('type');
+  if (grammar === "go" && node.type === "field_declaration" && names.length === 0) {
+    const embeddedType = node.childForFieldName("type");
     if (embeddedType) {
       names.push(embeddedType);
     }
@@ -69,14 +77,12 @@ function declarationNames(node: Node, grammar: string): Node[] {
 }
 
 function pythonDocstring(node: Node): string | undefined {
-  const statement = node
-    .childForFieldName('body')
-    ?.namedChildren.find((child) => child && child.type !== 'comment');
-  const value = statement?.type === 'expression_statement' ? statement.firstNamedChild : null;
-  if (!value || !['string', 'concatenated_string'].includes(value.type)) {
+  const statement = node.childForFieldName("body")?.namedChildren.find((child) => child && child.type !== "comment");
+  const value = statement?.type === "expression_statement" ? statement.firstNamedChild : null;
+  if (!value || !["string", "concatenated_string"].includes(value.type)) {
     return;
   }
-  const strings = value.type === 'string' ? [value] : value.namedChildren;
+  const strings = value.type === "string" ? [value] : value.namedChildren;
   const parts: string[] = [];
   for (const string of strings) {
     const match = string?.text.match(/^([ru]*)("""|'''|"|')([\s\S]*)\2$/i);
@@ -85,26 +91,37 @@ function pythonDocstring(node: Node): string | undefined {
     }
     let body = match[3];
     if (!/r/i.test(match[1])) {
-      body = body.replace(/\\(?:\r?\n|[\\'"abfnrtv]|x[\da-fA-F]{2}|u[\da-fA-F]{4}|U[\da-fA-F]{8})/g,
-        (escape) => {
-          const simple: Record<string, string> = {
-            '\\': '\\', "'": "'", '"': '"', a: '\x07', b: '\b', f: '\f',
-            n: '\n', r: '\r', t: '\t', v: '\v',
-          };
-          if (/^\\\r?\n$/.test(escape)) {
-            return '';
-          }
-          return escape[1] in simple
-            ? simple[escape[1]]
-            : String.fromCodePoint(Number.parseInt(escape.slice(2), 16));
-        });
+      body = body.replace(/\\(?:\r?\n|[\\'"abfnrtv]|x[\da-fA-F]{2}|u[\da-fA-F]{4}|U[\da-fA-F]{8})/g, (escape) => {
+        const simple: Record<string, string> = {
+          "\\": "\\",
+          "'": "'",
+          '"': '"',
+          a: "\x07",
+          b: "\b",
+          f: "\f",
+          n: "\n",
+          r: "\r",
+          t: "\t",
+          v: "\v",
+        };
+        if (/^\\\r?\n$/.test(escape)) {
+          return "";
+        }
+        return escape[1] in simple ? simple[escape[1]] : String.fromCodePoint(Number.parseInt(escape.slice(2), 16));
+      });
     }
     parts.push(body);
   }
-  const lines = parts.join('').split(/\r?\n/).map((line) => line.replace(/\t/g, '        '));
-  const indents = lines.slice(1).filter((line) => line.trim()).map((line) => line.match(/^ */)![0].length);
+  const lines = parts
+    .join("")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\t/g, "        "));
+  const indents = lines
+    .slice(1)
+    .filter((line) => line.trim())
+    .map((line) => line.match(/^ */)![0].length);
   const margin = indents.length ? Math.min(...indents) : 0;
-  return [lines[0].trimStart(), ...lines.slice(1).map((line) => line.slice(margin))].join('\n').trim();
+  return [lines[0].trimStart(), ...lines.slice(1).map((line) => line.slice(margin))].join("\n").trim();
 }
 
 /** Extracts declaration-bound documentation without executing a language toolchain. */
@@ -121,7 +138,7 @@ export class CommentParser {
     languageId: string,
     text: string,
     offset: number,
-    atDeclarationStart = false
+    atDeclarationStart = false,
   ): Promise<SourceComment | undefined> {
     const rules = commentLanguages[languageId];
     if (!rules) {
@@ -166,25 +183,18 @@ export class CommentParser {
       while (header && rules.wrappers?.includes(header.type)) {
         const children: Node[] = header.namedChildren.filter(
           (child): child is Node =>
-            child !== null &&
-            (rules.declarations.includes(child.type) || !!rules.wrappers?.includes(child.type))
+            child !== null && (rules.declarations.includes(child.type) || !!rules.wrappers?.includes(child.type)),
         );
         header = children.length === 1 ? children[0] : null;
       }
-      const name =
-        header && rules.declarations.includes(header.type)
-          ? declarationNames(header, grammar)[0]
-          : null;
+      const name = header && rules.declarations.includes(header.type) ? declarationNames(header, grammar)[0] : null;
       if (name) {
         offset = name.startIndex;
         leaf = cached.tree.rootNode.namedDescendantForIndex(offset, offset);
       }
     }
     for (let node: Node | null = leaf; node; node = node.parent) {
-      const enumMember =
-        style === 'jsdoc' &&
-        node.type === 'property_identifier' &&
-        node.parent?.type === 'enum_body';
+      const enumMember = style === "jsdoc" && node.type === "property_identifier" && node.parent?.type === "enum_body";
       if (!rules.declarations.includes(node.type) && !enumMember) {
         continue;
       }
@@ -194,82 +204,79 @@ export class CommentParser {
       }
 
       const identifiers = names.map((name) => name.text);
-      if (grammar === 'ruby') {
-        identifiers.push(...identifiers.map((name) => name.replace(/^:/, '')));
+      if (grammar === "ruby") {
+        identifiers.push(...identifiers.map((name) => name.replace(/^:/, "")));
       }
-      const value = node.childForFieldName('value');
-      if (value && ['arrow_function', 'function_expression'].includes(value.type)) {
+      const value = node.childForFieldName("value");
+      if (value && ["arrow_function", "function_expression"].includes(value.type)) {
         identifiers.push(
-          ...(value.childForFieldName('parameters')?.descendantsOfType('identifier') ?? [])
+          ...(value.childForFieldName("parameters")?.descendantsOfType("identifier") ?? [])
             .filter((identifier): identifier is Node => identifier !== null)
-            .map((identifier) => identifier.text)
+            .map((identifier) => identifier.text),
         );
-        const parameter = value.childForFieldName('parameter');
+        const parameter = value.childForFieldName("parameter");
         if (parameter) {
           identifiers.push(parameter.text);
         }
       }
       const headers = [node];
-      let declarator = node.childForFieldName('declarator');
+      let declarator = node.childForFieldName("declarator");
       while (declarator) {
         headers.push(declarator);
-        declarator = declarator.childForFieldName('declarator');
+        declarator = declarator.childForFieldName("declarator");
       }
       for (const headerNode of headers) {
-        for (const field of [
-          'parameters', 'receiver', 'type_parameters', 'return_type', 'result', 'returns',
-        ]) {
+        for (const field of ["parameters", "receiver", "type_parameters", "return_type", "result", "returns"]) {
           const header = headerNode.childForFieldName(field);
           if (header) {
             identifiers.push(
               ...header
                 .descendantsOfType(identifierNodes)
                 .filter((identifier): identifier is Node => identifier !== null)
-                .map((identifier) => identifier.text)
+                .map((identifier) => identifier.text),
             );
           }
         }
       }
-      if (style === 'python') {
+      if (style === "python") {
         const body = pythonDocstring(node);
-        return body ? { text: body, identifiers: [...new Set(identifiers)], style: 'python' } : undefined;
+        return body ? { text: body, identifiers: [...new Set(identifiers)], style: "python" } : undefined;
       }
-      for (let declaration: Node | null = node; declaration; ) {
+      for (let declaration: Node | null = node; declaration;) {
         const comments: string[] = [];
         let start = declaration.startIndex;
         let previous = declaration.previousNamedSibling;
         while (
           previous &&
-          (commentNodes.has(previous.type) ||
-            (style === 'rust' && previous.type === 'attribute_item'))
+          (commentNodes.has(previous.type) || (style === "rust" && previous.type === "attribute_item"))
         ) {
           const gap = text.slice(previous.endIndex, start);
-          if (!/^\s*$/.test(gap) || (style === 'go' && (gap.match(/\n/g)?.length ?? 0) > 1)) {
+          if (!/^\s*$/.test(gap) || (style === "go" && (gap.match(/\n/g)?.length ?? 0) > 1)) {
             break;
           }
-          if (style === 'rust' && previous.type === 'attribute_item') {
+          if (style === "rust" && previous.type === "attribute_item") {
             start = previous.startIndex;
             previous = previous.previousNamedSibling;
             continue;
           }
-          if (style === 'go' || style === 'ruby' || style === 'doxygen') {
-            const lineStart = text.lastIndexOf('\n', previous.startIndex - 1) + 1;
+          if (style === "go" || style === "ruby" || style === "doxygen") {
+            const lineStart = text.lastIndexOf("\n", previous.startIndex - 1) + 1;
             if (
               text.slice(lineStart, previous.startIndex).trim() &&
-              (style !== 'doxygen' || previous.endPosition.row < declaration.startPosition.row)
+              (style !== "doxygen" || previous.endPosition.row < declaration.startPosition.row)
             ) {
               break;
             }
-            if (style === 'doxygen' && /^(?:\/\/[!/]*<|\/\*[*!]?<)/.test(previous.text)) {
+            if (style === "doxygen" && /^(?:\/\/[!/]*<|\/\*[*!]?<)/.test(previous.text)) {
               break;
             }
             comments.unshift(previous.text);
-          } else if (style === 'jsdoc' && previous.text.startsWith('/**')) {
+          } else if (style === "jsdoc" && previous.text.startsWith("/**")) {
             comments.unshift(previous.text);
             break;
-          } else if (style === 'xml' && /^(?:\/\/\/(?!\/)|\/\*\*)/.test(previous.text)) {
+          } else if (style === "xml" && /^(?:\/\/\/(?!\/)|\/\*\*)/.test(previous.text)) {
             comments.unshift(previous.text);
-          } else if (style === 'rust') {
+          } else if (style === "rust") {
             if (/^(?:\/\/!|\/\*!)/.test(previous.text)) {
               break;
             }
@@ -280,7 +287,7 @@ export class CommentParser {
           start = previous.startIndex;
           previous = previous.previousNamedSibling;
         }
-        if (comments.length === 0 && (style === 'go' || style === 'doxygen')) {
+        if (comments.length === 0 && (style === "go" || style === "doxygen")) {
           const trailing = declaration.nextNamedSibling;
           if (
             trailing &&
@@ -293,34 +300,34 @@ export class CommentParser {
         if (comments.length > 0) {
           const body = comments
             .map((comment) => {
-              comment = comment.replace(/\r?\n$/, '');
-              if (style === 'ruby') {
-                return comment.startsWith('=begin')
-                  ? comment.replace(/^=begin[^\n]*\n/, '').replace(/\n=end[^\n]*$/, '')
-                  : comment.replace(/^# ?/, '');
+              comment = comment.replace(/\r?\n$/, "");
+              if (style === "ruby") {
+                return comment.startsWith("=begin")
+                  ? comment.replace(/^=begin[^\n]*\n/, "").replace(/\n=end[^\n]*$/, "")
+                  : comment.replace(/^# ?/, "");
               }
-              if (comment.startsWith('//')) {
-                return style === 'go'
-                  ? comment.slice(2).replace(/^ ?/, '')
-                  : comment.replace(/^\/\/[!/]*<? ?/, '');
+              if (comment.startsWith("//")) {
+                return style === "go" ? comment.slice(2).replace(/^ ?/, "") : comment.replace(/^\/\/[!/]*<? ?/, "");
               }
               return comment
-                .replace(/^\/\*[*!]?<?/, '')
-                .replace(/\*\/$/, '')
+                .replace(/^\/\*[*!]?<?/, "")
+                .replace(/\*\/$/, "")
                 .split(/\r?\n/)
-                .map((line) => line.replace(/^\s*\* ?/, ''))
-                .join('\n');
+                .map((line) => line.replace(/^\s*\* ?/, ""))
+                .join("\n");
             })
-            .filter((comment) => style !== 'go' || !/^(?:go:|line |extern |export )/.test(comment))
-            .filter((comment) => style !== 'ruby' || !/^(?:!|(?:coding|encoding)\s*[:=])/.test(comment))
-            .join('\n')
+            .filter((comment) => style !== "go" || !/^(?:go:|line |extern |export )/.test(comment))
+            .filter((comment) => style !== "ruby" || !/^(?:!|(?:coding|encoding)\s*[:=])/.test(comment))
+            .join("\n")
             .trim();
           return body ? { text: body, identifiers: [...new Set(identifiers)] } : undefined;
         }
         const parent: Node | null = declaration.parent;
         declaration =
-          parent && rules.wrappers?.includes(parent.type) &&
-          (parent.type !== 'body_statement' || !declaration.previousNamedSibling)
+          parent &&
+          rules.wrappers?.includes(parent.type) &&
+          // Comments before a statement list belong only to its first statement.
+          (!["body_statement", "statement_list"].includes(parent.type) || !declaration.previousNamedSibling)
             ? parent
             : null;
       }
@@ -339,7 +346,10 @@ export class CommentParser {
       this.forget(uri);
     }
     for (const parser of this.parsers.values()) {
-      void parser.then((value) => value.delete(), () => {});
+      void parser.then(
+        (value) => value.delete(),
+        () => {},
+      );
     }
   }
 }
