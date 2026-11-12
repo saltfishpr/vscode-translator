@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-11-12
+
 ### Changed
 
 - Translate HoverProvider documentation on click and display the original and translation in a right-side Panel, without language-specific source or definition lookup.
 - Preserve Markdown fenced and indented code blocks, including nested blocks and legacy code hovers, without sending them to translation providers.
 - Remove Tree-sitter WASM parsers and source-comment extraction. Hover actions now appear on word ranges; empty or code-only documentation does not trigger translation requests.
+
+### Fixed
+
+- Prefer the local extension host in remote workspaces, with the workspace extension host as a fallback.
 
 ## [0.1.5] - 2026-11-12
 

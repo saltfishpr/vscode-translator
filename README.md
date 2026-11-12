@@ -118,10 +118,11 @@ npx @vscode/vsce package
 
 ## 更新日志
 
-### 未发布
+### 0.1.6
 
 - Hover 翻译改为读取语言扩展提供的文档，在右侧 Panel 展示原文和译文，移除按语言解析源码及 Tree-sitter WASM 依赖。
 - Markdown 代码块不发送给翻译服务，译文中原样保留。
+- 远程工作区优先使用本地 Extension Host，必要时回退到工作区 Extension Host。
 
 ### 0.1.5
 
