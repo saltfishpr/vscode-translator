@@ -109,7 +109,10 @@ export function registerCommentHover(ctx: vscode.ExtensionContext) {
       {
         async provideHover(document, position, token) {
           // Git revisions may lack a language hover, leaving a standalone translation action.
-          if (document.uri.scheme === "git" || !extractor.supportsLanguage(document.languageId)) {
+          if (document.uri.scheme === "git") {
+            return;
+          }
+          if (!extractor.supportsLanguage(document.languageId)) {
             return;
           }
           const version = document.version;
