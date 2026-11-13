@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Per-card loading states and retries for selection and Hover translations. Retries retain the original request configuration and reuse successfully loaded Hover documentation snapshots.
+- Translation service, LLM model, and elapsed time on each card. Timing includes documentation loading and resets on retry or cache hits.
+
+### Changed
+
+- Selection and Hover translations now share one right-side Panel that keeps editor focus and appends independent cards in request order. History is cleared when the Panel closes.
+- Render originals and translations as Markdown with independently collapsible sections; originals start collapsed and translations expanded. Raw HTML is disabled, links display as text, and images display as alternative text.
+- Show the Hover translation action only when language providers return translatable documentation. Ordinary hovering queries documentation without calling a translation service.
+- Reorganize README usage, settings, and command documentation, and add the pi-ai license notice.
+
+### Fixed
+
+- Reject selection replacement when the document changes or closes during translation, and report failed edits instead of claiming success.
+- Preserve leading and trailing whitespace in selected text sent to translation providers.
+- Prevent completed requests from reopening a closed Panel or updating cards in a newly opened Panel.
+
 ## [0.1.6] - 2026-11-12
 
 ### Changed
