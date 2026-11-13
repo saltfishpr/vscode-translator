@@ -11,7 +11,7 @@ export function activate(ctx: vscode.ExtensionContext) {
   statusBar.command = "translator.pickProvider";
   refreshStatusBar();
   statusBar.show();
-  const panel = new TranslationPanel();
+  const panel = new TranslationPanel(ctx.extensionUri);
   ctx.subscriptions.push(statusBar, panel);
   registerTranslationHover(ctx, panel);
 
