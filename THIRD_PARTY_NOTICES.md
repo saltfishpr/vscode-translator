@@ -2,6 +2,7 @@
 
 ## MIT
 
+- `@earendil-works/pi-ai`: Copyright (c) 2025 Mario Zechner. <https://github.com/earendil-works/pi>
 - `markdown-it`: Copyright (c) 2014 Vitaly Puzrin, Alex Kocharin.
 - `linkify-it`: Copyright (c) 2015 Vitaly Puzrin.
 - `mdurl`: Copyright (c) 2015 Vitaly Puzrin, Alex Kocharin. Copyright Joyent, Inc. and other Node contributors. All rights reserved.
