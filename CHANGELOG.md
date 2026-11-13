@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-13
+
 ### Added
 
 - Per-card loading states and retries for selection and Hover translations. Retries retain the original request configuration and reuse successfully loaded Hover documentation snapshots.
@@ -18,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Render originals and translations as Markdown with independently collapsible sections; originals start collapsed and translations expanded. Raw HTML is disabled, links display as text, and images display as alternative text.
 - Show the Hover translation action only when language providers return translatable documentation. Ordinary hovering queries documentation without calling a translation service.
 - Reorganize README usage, settings, and command documentation, and add the pi-ai license notice.
+- Migrate the translation Panel to a React Webview with bundled scripts and styles, updating only cards whose state changes.
 
 ### Fixed
 
